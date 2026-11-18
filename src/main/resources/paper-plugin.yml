@@ -1,0 +1,34 @@
+name: LazyRoads
+version: '${version}'
+
+main: org.sylvarion.lazyroads.LazyRoads
+api-version: '26.3'
+load: POSTWORLD
+
+dependencies:
+  server:
+    FastAsyncWorldEdit:
+      load: BEFORE
+      required: true
+      join-classpath: true
+
+permissions:
+  lazyroads.smooth:
+    description: Smooth road slopes in a FAWE cuboid selection
+    default: op
+  lazyroads.dash:
+    description: Add dashed road markings in a FAWE cuboid selection
+    default: op
+  lazyroads.reload:
+    description: Reload the LazyRoads configuration
+    default: op
+  faweroadassistant.smooth:
+    description: Legacy permission for smoothing road slopes
+    default: op
+    children:
+      lazyroads.smooth: true
+  faweroadassistant.dash:
+    description: Legacy permission for adding dashed road markings
+    default: op
+    children:
+      lazyroads.dash: true

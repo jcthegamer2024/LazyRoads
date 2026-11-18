@@ -1,0 +1,16 @@
+# Sources in the same group can connect across a one-block rise.
+# Each source maps to the slab used for its own transition.
+# Matching slab block IDs are detected automatically. Use a tight cuboid around the road.
+road-materials:
+  roadway:
+    polished_deepslate: polished_deepslate_slab
+    white_concrete: white_concrete_slab
+  curb:
+    polished_andesite: polished_andesite_slab
+  sidewalk:
+    stone_bricks: stone_brick_slab
+
+# Lengths in blocks along the road centerline. Use positive whole numbers.
+dashes:
+  dash-length: 3
+  gap-length: 3
