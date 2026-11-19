@@ -1,6 +1,6 @@
 # Sources in the same group can connect across a one-block rise.
 # Each source maps to the slab used for its own transition.
-# Matching slab block IDs are detected automatically. Use a tight cuboid around the road.
+# Matching slab block IDs are detected automatically. Use a tight cuboid or polygon around the road.
 road-materials:
   roadway:
     polished_deepslate: polished_deepslate_slab

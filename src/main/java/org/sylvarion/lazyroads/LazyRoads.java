@@ -7,6 +7,7 @@ import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.regions.CuboidRegion;
+import com.sk89q.worldedit.regions.Polygonal2DRegion;
 import com.sk89q.worldedit.regions.Region;
 import com.sk89q.worldedit.util.formatting.text.TextComponent;
 import com.sk89q.worldedit.world.World;
@@ -38,9 +39,9 @@ public final class LazyRoads extends JavaPlugin {
         } catch (IOException | InvalidConfigurationException exception) {
             throw new IllegalStateException("Could not read the LazyRoads configuration", exception);
         }
-        registerRoadCommand("/roadsmooth", "lazyroads.smooth", "Smooth one-block rises in a FAWE cuboid",
+        registerRoadCommand("/roadsmooth", "lazyroads.smooth", "Smooth one-block rises in a FAWE selection",
                 "No slab transitions were placed in the selection.", () -> operations.smooth());
-        registerRoadCommand("/roaddash", "lazyroads.dash", "Add dashed center markings in a FAWE cuboid",
+        registerRoadCommand("/roaddash", "lazyroads.dash", "Add dashed center markings in a FAWE selection",
                 "No dashes were placed. Select a full-width stretch of unmarked polished deepslate road.", () -> operations.dash());
         registerCommand("lazyroads", "Reload the LazyRoads configuration", new BasicCommand() {
             @Override
@@ -126,7 +127,7 @@ public final class LazyRoads extends JavaPlugin {
             @Override
             public void execute(CommandSourceStack source, String[] args) {
                 if (!(source.getSender() instanceof Player player)) {
-                    source.getSender().sendMessage("Run this command in-game with a FAWE cuboid selected.");
+                    source.getSender().sendMessage("Run this command in-game with a FAWE cuboid or polygon selected.");
                     return;
                 }
                 boolean preview = args.length == 1 && args[0].equalsIgnoreCase("preview");
@@ -147,21 +148,22 @@ public final class LazyRoads extends JavaPlugin {
         LocalSession session = worldEdit.getSessionManager().get(actor);
         World world = BukkitAdapter.adapt(player.getWorld());
 
-        CuboidRegion cuboid;
+        Region region;
         try {
             Region selected = session.getSelection(world);
-            if (!(selected instanceof CuboidRegion region)) {
-                player.sendMessage("Use //sel cuboid and select both corners of the road first.");
+            if (!(selected instanceof CuboidRegion || selected instanceof Polygonal2DRegion)) {
+                player.sendMessage("Use //sel cuboid or //sel poly to select the road first.");
                 return;
             }
-            cuboid = region.clone();
+            region = selected.clone();
         } catch (IncompleteRegionException exception) {
-            player.sendMessage("Select both corners of the road with the FAWE wand first.");
+            player.sendMessage("Complete your cuboid or polygon selection with the FAWE wand first.");
             return;
         }
 
-        if ((long) cuboid.getWidth() * cuboid.getHeight() * cuboid.getLength() > MAX_SCAN_BLOCKS) {
-            player.sendMessage("Select a smaller section. The limit is " + MAX_SCAN_BLOCKS + " blocks per scan.");
+        // The planners allocate a grid across the selection's full bounding rectangle.
+        if ((long) region.getWidth() * region.getHeight() * region.getLength() > MAX_SCAN_BLOCKS) {
+            player.sendMessage("Select a smaller section. The selection bounds can span up to " + MAX_SCAN_BLOCKS + " blocks.");
             return;
         }
 
@@ -182,7 +184,7 @@ public final class LazyRoads extends JavaPlugin {
                     if (session.getMask() != null) {
                         edit.setMask(session.getMask());
                     }
-                    count = operation.apply(edit, cuboid, preview);
+                    count = operation.apply(edit, region, preview);
                 } finally {
                     if (!preview) {
                         session.remember(edit);
@@ -205,6 +207,6 @@ public final class LazyRoads extends JavaPlugin {
 
     @FunctionalInterface
     private interface RoadOperation {
-        int apply(EditSession edit, CuboidRegion region, boolean preview) throws WorldEditException;
+        int apply(EditSession edit, Region region, boolean preview) throws WorldEditException;
     }
 }

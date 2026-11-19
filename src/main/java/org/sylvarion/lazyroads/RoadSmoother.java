@@ -3,7 +3,7 @@ package org.sylvarion.lazyroads;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.math.BlockVector3;
-import com.sk89q.worldedit.regions.CuboidRegion;
+import com.sk89q.worldedit.regions.Region;
 import com.sk89q.worldedit.world.block.BlockState;
 import com.sk89q.worldedit.world.block.BlockType;
 import com.sk89q.worldedit.world.block.BlockTypes;
@@ -52,14 +52,15 @@ final class RoadSmoother {
         }
     }
 
-    int smooth(EditSession edit, CuboidRegion region, boolean preview) throws WorldEditException {
+    int smooth(EditSession edit, Region region, boolean preview) throws WorldEditException {
         BlockVector3 min = region.getMinimumPoint();
         BlockVector3 max = region.getMaximumPoint();
         int length = region.getLength();
         int worldTop = edit.getMaximumPoint().y();
         Surface[] surfaces = new Surface[region.getWidth() * length];
         for (int index = 0; index < surfaces.length; index++) {
-            surfaces[index] = findSurface(edit, min.x() + index / length, min.z() + index % length, min.y(), max.y(), worldTop);
+            surfaces[index] = findSurface(edit, region, min.x() + index / length, min.z() + index % length,
+                    min.y(), max.y(), worldTop);
         }
 
         int maxHeight = 2 * max.y() + 2;
@@ -77,7 +78,7 @@ final class RoadSmoother {
             }
         }
         edges.align(heights, transitions == null ? null : transitions.baseHeights(), targetMaterials,
-                (cell, height) -> clearColumn(edit, min.x() + cell / length, min.z() + cell % length,
+                (cell, height) -> clearColumn(edit, region, min.x() + cell / length, min.z() + cell % length,
                         blockY(height), max.y()));
 
         int count = 0;
@@ -88,17 +89,21 @@ final class RoadSmoother {
             if (material == null || (surface != null && surface.height() == height && surface.material() == material)) {
                 continue;
             }
-            if (applyColumn(edit, min.x() + index / length, min.z() + index % length, surface, material, height, preview)) {
+            if (applyColumn(edit, region, min.x() + index / length, min.z() + index % length,
+                    surface, material, height, preview)) {
                 count++;
             }
         }
         return count;
     }
 
-    private boolean applyColumn(EditSession edit, int x, int z, Surface surface, RoadMaterial material,
+    private boolean applyColumn(EditSession edit, Region region, int x, int z, Surface surface, RoadMaterial material,
                                 int height, boolean preview) throws WorldEditException {
         int y = blockY(height);
         BlockVector3 target = BlockVector3.at(x, y, z);
+        if (!region.contains(target)) {
+            return false;
+        }
         BlockState cap = (height & 1) == 0 ? material.fullBlock() : material.bottomSlab();
         if (surface == null || surface.y() == y) {
             return preview || edit.setBlock(target, cap);
@@ -134,7 +139,10 @@ final class RoadSmoother {
         return true;
     }
 
-    private boolean clearColumn(EditSession edit, int x, int z, int startY, int maxY) {
+    private boolean clearColumn(EditSession edit, Region region, int x, int z, int startY, int maxY) {
+        if (!region.contains(BlockVector3.at(x, startY, z))) {
+            return false;
+        }
         int top = Math.min(maxY + 1, edit.getMaximumPoint().y());
         for (int y = startY; y <= top; y++) {
             if (!edit.getBlock(x, y, z).getBlockType().getMaterial().isAir()) {
@@ -147,8 +155,8 @@ final class RoadSmoother {
     private static int blockY(int height) {
         return Math.floorDiv(height - 1, 2);
     }
-    private Surface findSurface(EditSession edit, int x, int z, int minY, int maxY, int worldTop) {
-        RoadSurface surface = RoadSurface.find(edit, x, z, minY, maxY, worldTop);
+    private Surface findSurface(EditSession edit, Region region, int x, int z, int minY, int maxY, int worldTop) {
+        RoadSurface surface = RoadSurface.find(edit, region, x, z, minY, maxY, worldTop);
         if (surface == null) {
             return null;
         }

@@ -33,8 +33,9 @@ final class RoadTransitions {
                 surfaceOffsets[cell] = "curb".equals(group) || "sidewalk".equals(group) ? 1 : 0;
             }
         }
-        int[] uphill = distances(2);
-        int[] downhill = distances(-2);
+        boolean[] junctions = new RoadJunctions(surfaces, length).find();
+        int[] uphill = distances(2, junctions);
+        int[] downhill = distances(-2, junctions);
         boolean[] visited = new boolean[surfaces.length];
 
         for (int index = 0; index < surfaces.length; index++) {
@@ -46,13 +47,15 @@ final class RoadTransitions {
             int farthestUphillDistance = 0;
             boolean restoreHalfSteps = false;
             boolean sharedTerrace = false;
+            boolean meetsJunction = false;
             for (int i = 0; i < size; i++) {
                 int cell = queue[i];
                 farthestUphillDistance = Math.max(farthestUphillDistance, uphill[cell]);
                 sharedTerrace |= !sameGroup(index, cell);
                 restoreHalfSteps |= touchesCurb(cell);
+                meetsJunction |= junctions[cell];
             }
-            TransitionLine line = sharedTerrace ? fitTransitionLine(size) : null;
+            TransitionLine line = sharedTerrace && !meetsJunction ? fitTransitionLine(size) : null;
             // At the end of a road or selection, use the far end of this level as its downhill edge.
             for (int i = 0; i < size; i++) {
                 int cell = queue[i];
@@ -166,14 +169,25 @@ final class RoadTransitions {
         }
     }
 
-    private int[] distances(int towardHeight) {
+    private int[] distances(int towardHeight, boolean[] junctions) {
         int[] distance = new int[surfaces.length];
         int size = 0;
         for (int cell = 0; cell < surfaces.length; cell++) {
             if (surfaces[cell] == null) {
                 continue;
             }
+            // Keep each approach's transition between its own rise and the shared pavement.
+            if (towardHeight < 0 && junctions[cell]) {
+                distance[cell] = 1;
+                queue[size++] = cell;
+                continue;
+            }
             for (int direction = 0; direction < DX.length; direction++) {
+                // A diagonal contact across the shared pavement does not start a ramp.
+                if (junctions[cell]
+                        && DX[direction] != 0 && DZ[direction] != 0) {
+                    continue;
+                }
                 int neighbor = neighbor(cell, direction);
                 if (sameGroup(cell, neighbor) && bands[neighbor] == bands[cell] + towardHeight) {
                     distance[cell] = 1;

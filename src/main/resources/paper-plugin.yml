@@ -14,10 +14,10 @@ dependencies:
 
 permissions:
   lazyroads.smooth:
-    description: Smooth road slopes in a FAWE cuboid selection
+    description: Smooth road slopes in a FAWE cuboid or polygon selection
     default: op
   lazyroads.dash:
-    description: Add dashed road markings in a FAWE cuboid selection
+    description: Add dashed road markings in a FAWE cuboid or polygon selection
     default: op
   lazyroads.reload:
     description: Reload the LazyRoads configuration

@@ -3,7 +3,7 @@ package org.sylvarion.lazyroads;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.math.BlockVector3;
-import com.sk89q.worldedit.regions.CuboidRegion;
+import com.sk89q.worldedit.regions.Region;
 import com.sk89q.worldedit.world.block.BlockState;
 import com.sk89q.worldedit.world.block.BlockType;
 import com.sk89q.worldedit.world.block.BlockTypes;
@@ -20,7 +20,7 @@ final class RoadDasher {
         this.period = (long) dashLength + gapLength;
     }
 
-    int dash(EditSession edit, CuboidRegion region, boolean preview) throws WorldEditException {
+    int dash(EditSession edit, Region region, boolean preview) throws WorldEditException {
         BlockVector3 min = region.getMinimumPoint();
         BlockVector3 max = region.getMaximumPoint();
         int width = region.getWidth();
@@ -30,7 +30,7 @@ final class RoadDasher {
         int[] heights = new int[surfaces.length];
         boolean[] marked = new boolean[surfaces.length];
         for (int cell = 0; cell < surfaces.length; cell++) {
-            RoadSurface surface = RoadSurface.find(edit, min.x() + cell / length, min.z() + cell % length,
+            RoadSurface surface = RoadSurface.find(edit, region, min.x() + cell / length, min.z() + cell % length,
                     min.y(), max.y(), worldTop);
             if (surface == null) {
                 continue;
